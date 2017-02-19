@@ -75,7 +75,7 @@ public class CmisClient {
 		if(repositories != null && repositories.size()>0){
 			//dovrebbe esserci solo un repository in Alfresco
 			alfrescoRepository = repositories.get(0);
-			logger.info("Found Alfresco repository, ID: " + alfrescoRepository.getId());
+			logger.info("Found Alfresco repository [id: " + alfrescoRepository.getId() + "]");
 		} else {
 			throw new CmisConnectionException(
 					"Could not connect to the Alfresco Server, no repository found!");
@@ -202,28 +202,21 @@ public class CmisClient {
 	 * @param path
 	 * @return document
 	 */
-	public Document getDocumentByUUID(String uuid, String path){
+	public Document getDocumentByUUIDPath(String uuid, String path){
 		CmisObject object = null;
 		try {
-			if (!"".equals(uuid) && !"".equals(path)) {
-				logger.error("Not a valid UUID or path!");
-				return null;
-			} else{
-				if(!"".equals(path)){
-					object = session.getObjectByPath(path);
-					return (Document)object;
-				}
-				String id = "workspace://SpacesStore/"+uuid;
-				object = session.getObject(id);
-				if (object == null) return null;
-				if(!object.getType().getDisplayName().equals("Document")) return null;
+			if(path!=null){
+				object = session.getObjectByPath(path);
+				logger.info("Document retrived [path: " + path + "]");
+				return (Document)object;
 			}
-			if (path.equals("")){
-				
-			}
+			String id = "workspace://SpacesStore/"+uuid;
+			object = session.getObject(id);
+			if (object == null) return null;
+			if(!object.getType().getDisplayName().equals("Document")) return null;
 			logger.info("Document retrived [id: " + uuid + "]");
 		} catch (CmisObjectNotFoundException e){
-			logger.error("Object not found!");
+			logger.error("Document not found!");
 		}
 		return (Document)object;
 	}
@@ -246,7 +239,7 @@ public class CmisClient {
 	
 	public void removeDocument(List<String> uuidList){
 		for(String uuid : uuidList){
-			Document doc = getDocumentByUUID(uuid, "");
+			Document doc = getDocumentByUUIDPath(uuid, "");
 			String path = doc.getPaths().get(0);
 			//controllo permessi
 			if (doc.getAllowableActions().getAllowableActions().

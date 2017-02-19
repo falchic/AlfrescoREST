@@ -39,4 +39,23 @@ public class RequestMessage implements Serializable{
 		this.request = request;
 	}
 	
+	public boolean isValid(boolean isGetDoc){
+		if(user==null && password==null){
+			return false;
+		} else {
+			if(isGetDoc){
+				if(!(request.get("path")==null) || !(request.get("uuid")==null)){
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				for (Map.Entry<String, Object> entry : request.entrySet()){
+				    if(entry.getValue()==null)
+				    	return false;
+				}
+			}
+		}
+		return true;
+	}
 }

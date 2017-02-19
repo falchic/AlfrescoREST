@@ -27,7 +27,53 @@ import it.cfalchi.alfrescorest.utils.RequestMessage;
 public class AlfrescoController {
 	
 	private static final Logger logger = LoggerFactory.getLogger(AlfrescoController.class);
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
+	 *			"destination":"",
+	 *			"doc_name": "",
+	 *			"doc_title" "",
+	 *			"doc_descr": "",
+	 *			"doc_mime_type" "",
+	 *			"attachment" : ""
+	 *		}
+	 *	}
+	 */
+	//TODO come mando un file?!?!
+	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_CREATE_DOC, method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<String> createDocumentService (@RequestBody RequestMessage message){
+		logger.info("Start createDocumentService");
 		
+		ResponseEntity<String> response = null;
+		
+		boolean isValid = message.isValid(false);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+			//cambiare solo il file in stream di byte e inviare quello al client cmis
+		} else {
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+			logger.error("Request not valid!");
+		}
+		logger.info("Stop createDocumentService");
+		return response;
+	}
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
+	 *			"uuid":"e63f8ee3-6e64-4694-9cde-4998a24f65a8;1.0",
+	 *			"path": ""
+	 *		}
+	 *	}
+	 */
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_GET_DOC, method = RequestMethod.POST)
 	public @ResponseBody ResponseEntity<byte[]> getDocumentService (@RequestBody RequestMessage message) throws IOException {
 		logger.info("Start getDocumentService");
@@ -36,12 +82,13 @@ public class AlfrescoController {
 		Document doc = null;
 		ResponseEntity<byte[]> response = null;
 		
-		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
-		Map<String,Object> request = message.getRequest();
-		String uuid = (String) request.get("uuid");
-		String path = (String) request.get("path");
-		if(uuid!= null || path!=null){
-			doc = cmisClient.getDocumentByUUID(uuid, path);
+		boolean isValid = message.isValid(true);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+			String uuid = (String) request.get("uuid");
+			String path = (String) request.get("path");
+			doc = cmisClient.getDocumentByUUIDPath(uuid, path);
 			if(doc!=null){
 				ContentStream contentStream = doc.getContentStream();
 				InputStream stream = contentStream.getStream();
@@ -50,7 +97,6 @@ public class AlfrescoController {
 		        responseHeaders.add("content-disposition", "attachment; filename=" + doc.getName());
 		        responseHeaders.add("Content-Type",doc.getContentStreamMimeType());
 				response = new ResponseEntity<byte[]>(out, responseHeaders, HttpStatus.OK);
-				logger.info("End getDocumentService");
 			} else {
 				response = new ResponseEntity<byte[]>(HttpStatus.NOT_FOUND);
 				logger.error("Document not found!");
@@ -59,6 +105,7 @@ public class AlfrescoController {
 			response = new ResponseEntity<byte[]>(HttpStatus.BAD_REQUEST);
 			logger.error("Request not valid!");
 		}
+		logger.info("End getDocumentService");
 		return response;
 	}
 	
