@@ -1,5 +1,9 @@
 package it.cfalchi.alfrescorest;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -16,7 +20,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import it.cfalchi.alfrescorest.utils.AlfrescoRestURIConstants;
 import it.cfalchi.alfrescorest.utils.CmisClient;
@@ -35,17 +41,17 @@ public class AlfrescoController {
 	 *		"password":"alfresco",
 	 *		"request":{
 	 *			"destination":"",
-	 *			"doc_name": "",
-	 *			"doc_title" "",
-	 *			"doc_descr": "",
-	 *			"doc_mime_type" "",
-	 *			"attachment" : ""
+	 *			"name": "",
+	 *			"title" "",
+	 *			"description": "",
+	 *			"mime_type" ""
 	 *		}
 	 *	}
 	 */
-	//TODO come mando un file?!?!
+	//TODO dove lo metto il file?!?!!?
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_CREATE_DOC, method = RequestMethod.POST)
-	public @ResponseBody ResponseEntity<String> createDocumentService (@RequestBody RequestMessage message){
+	public @ResponseBody ResponseEntity<String> createDocumentService (@RequestBody RequestMessage message, 
+			@RequestParam("file") MultipartFile file){
 		logger.info("Start createDocumentService");
 		
 		ResponseEntity<String> response = null;
@@ -54,7 +60,18 @@ public class AlfrescoController {
 		if(isValid){
 			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
 			Map<String,Object> request = message.getRequest();
-			//cambiare solo il file in stream di byte e inviare quello al client cmis
+			try {
+				byte[] in = file.getBytes();
+				BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(new File(file.getName())));
+				stream.write(in);
+		        stream.close();
+		        request.put("attachment", stream);
+		        request.put("length", file.getSize());
+		        cmisClient.createDocument(request);
+			} catch (IOException e) {
+				logger.error("Upload failed!" + e.getMessage());
+			}
+			response = new ResponseEntity<String>(HttpStatus.CREATED);
 		} else {
 			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
 			logger.error("Request not valid!");

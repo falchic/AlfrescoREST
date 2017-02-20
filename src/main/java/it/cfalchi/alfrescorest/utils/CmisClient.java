@@ -38,6 +38,12 @@ public class CmisClient {
 	private Session session;
 	
 	private static final String ALFRESCO_ATOMPUB_URL = "http://localhost:8080/alfresco/cmisatom";
+	private static final String DOC_PATH = "destination";
+	private static final String DOC_NAME = "name";
+	private static final String DOC_DESCR = "description";
+	private static final String DOC_TITLE = "title";
+	private static final String DOC_MIME_TYPE = "mime_type";
+	
 	
 	private static Logger logger = LoggerFactory.getLogger(CmisClient.class);
 	
@@ -95,11 +101,11 @@ public class CmisClient {
 	 * @param 
 	 * @return newDocument
 	 */
-	public Document createDocument(String path, File file) throws FileNotFoundException{
+	public Document createDocument(Map<String,Object> request) throws FileNotFoundException{
 		Folder parentFolder = null;
 		Document newDocument = null;
 		try{
-			parentFolder = (Folder) session.getObjectByPath(path);
+			parentFolder = (Folder) session.getObjectByPath((String) request.get(DOC_PATH));
 			//controllo permessi
 			if (parentFolder.getAllowableActions().getAllowableActions().contains(Action.CAN_CREATE_DOCUMENT) == false) {
 				throw new CmisUnauthorizedException(
@@ -107,28 +113,30 @@ public class CmisClient {
 			}
 			
 			//controllo se esiste già un file con lo stesso nome
-			newDocument = (Document) getObject(parentFolder, file.getName());
+			newDocument = (Document) getObject(parentFolder, (String) request.get(DOC_NAME));
 			if (newDocument == null){
+				String name = (String) request.get(DOC_NAME);
 				Map<String, Object> props = new HashMap<String, Object>();
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document");
-				props.put(PropertyIds.NAME, file.getName());
-				String mimeType = new MimetypesFileTypeMap().getContentType(file);
-				InputStream input = new FileInputStream(file);
+				props.put(PropertyIds.NAME, (String) name);
+				String mimeType = (String) request.get(DOC_MIME_TYPE);
+				InputStream input = (InputStream) request.get("attachment");
 				//gestione aspects per CMIS 1.0 (title, description)
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document,P:cm:titled");
-				props.put("cm:title", "titolo prova");
-				props.put("cm:description", "prova Description");
+				props.put("cm:title", request.get(DOC_TITLE));
+				props.put("cm:description", request.get(DOC_DESCR));
 				ContentStream contentStream = session.getObjectFactory()
-						.createContentStream(file.getName(), file.length(), mimeType, input);
+						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument = parentFolder.createDocument(props, contentStream, VersioningState.MAJOR);
-				logger.info("Document '"+file.getName()+"' created in " + path);
+				logger.info("Document '" + name + "' created in " + (String) request.get(DOC_PATH));
 			} else {
 				//se file esiste viene eseguito l'update del contenuto
 				logger.info("Document already exists, updating content stream...");
-				String mimeType = new MimetypesFileTypeMap().getContentType(file);
-				InputStream input = new FileInputStream(file);
+				String name = (String) request.get(DOC_NAME);
+				String mimeType = (String) request.get(DOC_MIME_TYPE);
+				InputStream input = (InputStream) request.get("attachment");
 				ContentStream contentStream = session.getObjectFactory()
-						.createContentStream(file.getName(), file.length(), mimeType, input);
+						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument.setContentStream(contentStream, true);
 				logger.info("Document "+newDocument.getPaths().get(0)+" updated");
 			}
@@ -210,7 +218,7 @@ public class CmisClient {
 				logger.info("Document retrived [path: " + path + "]");
 				return (Document)object;
 			}
-			String id = "workspace://SpacesStore/"+uuid;
+			String id = "workspace://SpacesStore/" + uuid;
 			object = session.getObject(id);
 			if (object == null) return null;
 			if(!object.getType().getDisplayName().equals("Document")) return null;
