@@ -1,15 +1,14 @@
 package it.cfalchi.alfrescorest.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.activation.MimetypesFileTypeMap;
 
 import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.chemistry.opencmis.client.api.Document;
@@ -43,6 +42,7 @@ public class CmisClient {
 	private static final String DOC_DESCR = "description";
 	private static final String DOC_TITLE = "title";
 	private static final String DOC_MIME_TYPE = "mime_type";
+	private static final String REQUEST_ATTACHMENT = "attachment";
 	
 	
 	private static Logger logger = LoggerFactory.getLogger(CmisClient.class);
@@ -120,7 +120,7 @@ public class CmisClient {
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document");
 				props.put(PropertyIds.NAME, (String) name);
 				String mimeType = (String) request.get(DOC_MIME_TYPE);
-				InputStream input = (InputStream) request.get("attachment");
+				InputStream input = (InputStream) request.get(REQUEST_ATTACHMENT);
 				//gestione aspects per CMIS 1.0 (title, description)
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document,P:cm:titled");
 				props.put("cm:title", request.get(DOC_TITLE));
@@ -134,7 +134,7 @@ public class CmisClient {
 				logger.info("Document already exists, updating content stream...");
 				String name = (String) request.get(DOC_NAME);
 				String mimeType = (String) request.get(DOC_MIME_TYPE);
-				InputStream input = (InputStream) request.get("attachment");
+				InputStream input = (InputStream) request.get(REQUEST_ATTACHMENT);
 				ContentStream contentStream = session.getObjectFactory()
 						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument.setContentStream(contentStream, true);
