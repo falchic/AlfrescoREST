@@ -3,10 +3,14 @@ package it.cfalchi.alfrescorest.controller;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.chemistry.opencmis.client.api.Document;
+import org.apache.chemistry.opencmis.client.api.Folder;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
+import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +29,11 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.cfalchi.alfrescorest.cmis.CmisClient;
+import it.cfalchi.alfrescorest.model.DocumentRetrived;
+import it.cfalchi.alfrescorest.model.RequestMessage;
 import it.cfalchi.alfrescorest.utils.AlfrescoRestURIConstants;
-import it.cfalchi.alfrescorest.utils.CmisClient;
-import it.cfalchi.alfrescorest.utils.RequestMessage;
+import it.cfalchi.alfrescorest.utils.RequestConstants;
 
 
 @Controller
@@ -67,19 +73,19 @@ public class AlfrescoController {
 		boolean isValid = message.isValid(false);
 		if(isValid && !file.isEmpty()){
 			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
-			Map<String,Object> request = message.getRequest();
-			try {
-				request.put("name", file.getOriginalFilename());
-				request.put("mime_type", file.getContentType());
-				request.put("length", file.getSize());
-				byte[] in = file.getBytes();
-				InputStream inputStream = new ByteArrayInputStream(in);
-		        request.put("attachment", inputStream);
-		        cmisClient.createDocument(request);
-			} catch (IOException e) {
-				logger.error("Upload failed!" + e.getMessage());
-			}
-			response = new ResponseEntity<String>(HttpStatus.CREATED);
+			Map<String,Object> request = message.getRequest();		
+			request.put(RequestConstants.DOC_NAME, file.getOriginalFilename());
+			request.put(RequestConstants.DOC_MIME_TYPE, file.getContentType());
+			request.put(RequestConstants.FILE_LENGTH, file.getSize());
+			byte[] in = file.getBytes();
+			InputStream inputStream = new ByteArrayInputStream(in);
+		    request.put("attachment", inputStream);
+		    boolean created = cmisClient.createDocument(request);
+		    if(created){
+		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    } else {
+		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		    }
 		} else {
 			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
 			logger.error("Request not valid!");
@@ -94,8 +100,43 @@ public class AlfrescoController {
 	 *		"user":"admin",
 	 *		"password":"alfresco",
 	 *		"request":{
+	 *			"destination":"",
+	 *			"name" ""
+	 *		}
+	 *	}
+	 */
+	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_CREATE_FOLDER, method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<String> createFolderService (@RequestBody RequestMessage message){
+		logger.info("Start createFolderService");
+		
+		ResponseEntity<String> response = null;
+		
+		boolean isValid = message.isValid(false);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+		    boolean created = cmisClient.createFolder(request);
+		    if(created){
+		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    } else {
+		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		    }
+		} else {
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+			logger.error("Request not valid!");
+		}
+		logger.info("Stop createFolderService");
+		return response;
+	}
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
 	 *			"uuid":"e63f8ee3-6e64-4694-9cde-4998a24f65a8;1.0",
-	 *			"path": ""
+	 *			"destination": ""
 	 *		}
 	 *	}
 	 */
@@ -111,8 +152,8 @@ public class AlfrescoController {
 		if(isValid){
 			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
 			Map<String,Object> request = message.getRequest();
-			String uuid = (String) request.get("uuid");
-			String path = (String) request.get("path");
+			String uuid = (String) request.get(RequestConstants.DOC_UUID);
+			String path = (String) request.get(RequestConstants.DOC_PATH);
 			doc = cmisClient.getDocumentByUUIDPath(uuid, path);
 			if(doc!=null){
 				ContentStream contentStream = doc.getContentStream();
@@ -124,7 +165,6 @@ public class AlfrescoController {
 				response = new ResponseEntity<byte[]>(out, responseHeaders, HttpStatus.OK);
 			} else {
 				response = new ResponseEntity<byte[]>(HttpStatus.NOT_FOUND);
-				logger.error("Document not found!");
 			}
 		} else {
 			response = new ResponseEntity<byte[]>(HttpStatus.BAD_REQUEST);
@@ -132,6 +172,65 @@ public class AlfrescoController {
 		}
 		logger.info("End getDocumentService");
 		return response;
+	}
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
+	 *			"destination":"",
+	 *			"get_content": ""
+	 *		}
+	 *	}
+	 */
+	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_GET_DOCS, method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<List<DocumentRetrived>> getDocumentsFolderService (@RequestBody RequestMessage message) throws IOException {
+		logger.info("Start getDocumentsFolderService");
+		
+		byte[] out = null;
+		ResponseEntity<List<DocumentRetrived>> response = null;
+		List<DocumentRetrived> documentList = new ArrayList<DocumentRetrived>();
+		
+		boolean isValid = message.isValid(false);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+			String path = (String) request.get(RequestConstants.DOC_PATH);
+			List<Document> docs = cmisClient.getDocumentsByFolder(path);
+			if(docs!=null && !docs.isEmpty()){
+				for (Document doc : docs){
+					String uuid = getShortUuid(doc.getId());
+					DocumentRetrived document = new DocumentRetrived(uuid, doc.getName());
+					boolean getContent = (boolean) request.get(RequestConstants.GET_CONTENT);
+					if(getContent){
+						ContentStream contentStream = doc.getContentStream();
+						InputStream stream = contentStream.getStream();
+						out=IOUtils.toByteArray(stream);
+						document.setContent(out);
+					}
+					documentList.add(document);
+				}
+				response = new ResponseEntity<List<DocumentRetrived>>(documentList, HttpStatus.OK);
+			} else if(docs.isEmpty()){
+				logger.info("No documents in " + path);
+				response = new ResponseEntity<List<DocumentRetrived>>(documentList, HttpStatus.OK);
+			} else {
+				response = new ResponseEntity<List<DocumentRetrived>>(HttpStatus.NOT_FOUND);
+			}
+		} else {
+			response = new ResponseEntity<List<DocumentRetrived>>(HttpStatus.BAD_REQUEST);
+			logger.error("Request not valid!");
+		}
+		logger.info("End getDocumentsFolderService");
+		return response;
+	}
+	
+	private String getShortUuid(String id){
+		String[] parts = id.split("/"); 
+		String uuid = parts[3];
+		return uuid;
 	}
 	
 }

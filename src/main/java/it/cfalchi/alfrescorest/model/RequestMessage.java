@@ -1,4 +1,4 @@
-package it.cfalchi.alfrescorest.utils;
+package it.cfalchi.alfrescorest.model;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -44,7 +44,7 @@ public class RequestMessage implements Serializable{
 			return false;
 		} else {
 			if(isGetDoc){
-				if(!(request.get("path")==null) || !(request.get("uuid")==null)){
+				if(!(request.get("destination")==null) || !(request.get("uuid")==null)){
 					return true;
 				} else {
 					return false;

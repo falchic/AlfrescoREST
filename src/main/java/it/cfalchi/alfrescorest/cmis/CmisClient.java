@@ -1,9 +1,7 @@
-package it.cfalchi.alfrescorest.utils;
+package it.cfalchi.alfrescorest.cmis;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,6 +28,8 @@ import org.apache.chemistry.opencmis.commons.exceptions.CmisUnauthorizedExceptio
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.cfalchi.alfrescorest.utils.RequestConstants;
+
 public class CmisClient {
 	
 	// utente che si connette ad Alfresco
@@ -37,13 +37,6 @@ public class CmisClient {
 	private Session session;
 	
 	private static final String ALFRESCO_ATOMPUB_URL = "http://localhost:8080/alfresco/cmisatom";
-	private static final String DOC_PATH = "destination";
-	private static final String DOC_NAME = "name";
-	private static final String DOC_DESCR = "description";
-	private static final String DOC_TITLE = "title";
-	private static final String DOC_MIME_TYPE = "mime_type";
-	private static final String REQUEST_ATTACHMENT = "attachment";
-	
 	
 	private static Logger logger = LoggerFactory.getLogger(CmisClient.class);
 	
@@ -97,15 +90,13 @@ public class CmisClient {
 	 * con relativi metadati.
 	 * Restituisce l'istanza del nuovo documento/documento aggiornato.
 	 * 
-	 * @param path
-	 * @param 
 	 * @return newDocument
 	 */
-	public Document createDocument(Map<String,Object> request) throws FileNotFoundException{
+	public boolean createDocument(Map<String,Object> request) throws FileNotFoundException{
 		Folder parentFolder = null;
 		Document newDocument = null;
 		try{
-			parentFolder = (Folder) session.getObjectByPath((String) request.get(DOC_PATH));
+			parentFolder = (Folder) session.getObjectByPath((String) request.get(RequestConstants.DOC_PATH));
 			//controllo permessi
 			if (parentFolder.getAllowableActions().getAllowableActions().contains(Action.CAN_CREATE_DOCUMENT) == false) {
 				throw new CmisUnauthorizedException(
@@ -113,28 +104,28 @@ public class CmisClient {
 			}
 			
 			//controllo se esiste già un file con lo stesso nome
-			newDocument = (Document) getObject(parentFolder, (String) request.get(DOC_NAME));
+			newDocument = (Document) getObject(parentFolder, (String) request.get(RequestConstants.DOC_NAME));
 			if (newDocument == null){
-				String name = (String) request.get(DOC_NAME);
+				String name = (String) request.get(RequestConstants.DOC_NAME);
 				Map<String, Object> props = new HashMap<String, Object>();
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document");
 				props.put(PropertyIds.NAME, (String) name);
-				String mimeType = (String) request.get(DOC_MIME_TYPE);
-				InputStream input = (InputStream) request.get(REQUEST_ATTACHMENT);
+				String mimeType = (String) request.get(RequestConstants.DOC_MIME_TYPE);
+				InputStream input = (InputStream) request.get(RequestConstants.REQUEST_ATTACHMENT);
 				//gestione aspects per CMIS 1.0 (title, description)
 				props.put(PropertyIds.OBJECT_TYPE_ID, "cmis:document,P:cm:titled");
-				props.put("cm:title", request.get(DOC_TITLE));
-				props.put("cm:description", request.get(DOC_DESCR));
+				props.put("cm:title", request.get(RequestConstants.DOC_TITLE));
+				props.put("cm:description", request.get(RequestConstants.DOC_DESCR));
 				ContentStream contentStream = session.getObjectFactory()
 						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument = parentFolder.createDocument(props, contentStream, VersioningState.MAJOR);
-				logger.info("Document '" + name + "' created in " + (String) request.get(DOC_PATH));
+				logger.info("Document '" + name + "' created in " + (String) request.get(RequestConstants.DOC_PATH));
 			} else {
 				//se file esiste viene eseguito l'update del contenuto
 				logger.info("Document already exists, updating content stream...");
-				String name = (String) request.get(DOC_NAME);
-				String mimeType = (String) request.get(DOC_MIME_TYPE);
-				InputStream input = (InputStream) request.get(REQUEST_ATTACHMENT);
+				String name = (String) request.get(RequestConstants.DOC_NAME);
+				String mimeType = (String) request.get(RequestConstants.DOC_MIME_TYPE);
+				InputStream input = (InputStream) request.get(RequestConstants.REQUEST_ATTACHMENT);
 				ContentStream contentStream = session.getObjectFactory()
 						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument.setContentStream(contentStream, true);
@@ -142,8 +133,9 @@ public class CmisClient {
 			}
 		} catch (CmisObjectNotFoundException e){
 			logger.error("Path not valid!");
+			return false;
 		}
-		return newDocument;
+		return true;
 	}
 	
 	/**
@@ -169,14 +161,14 @@ public class CmisClient {
 	
 	/**
 	 * Crea una nuova cartella nel path indicato, se non esiste già.
-	 * 
-	 * @param path
-	 * @param folderName
 	 */
-	//TODO creazione in profondità e documenti?
+	//TODO creazione in profondità
 	//TODO attribuzione permessi
-	public void createFolder(String path, String folderName) {
+	public boolean createFolder(Map<String,Object> request) {
+		String path = (String) request.get(RequestConstants.FOLDER_PATH);
+		String folderName = (String) request.get(RequestConstants.FOLDER_NAME);
 		Folder parentFolder = null;
+		Folder newFolder = null;
 		try{
 			parentFolder = (Folder) session.getObjectByPath(path);
 			//controllo sui permessi dell'utente
@@ -187,7 +179,7 @@ public class CmisClient {
 			}
 			
 			//controlla se esiste già una cartella con lo stesso nome
-			Folder newFolder = (Folder) getObject(parentFolder, folderName);
+			newFolder = (Folder) getObject(parentFolder, folderName);
 			if(newFolder == null){
 				Map<String, Object> folderProps = new HashMap<String, Object>();
 				folderProps.put(PropertyIds.NAME, folderName);
@@ -199,8 +191,10 @@ public class CmisClient {
 			}
 			
 		} catch (CmisObjectNotFoundException e){
-			logger.error("Object not found!");
+			logger.error("Path not valid!");
+			return false;
 		}
+		return true;
 	}
 	
 	/**
@@ -232,15 +226,19 @@ public class CmisClient {
 	public List<Document> getDocumentsByFolder(String path){
 		List<Document> documents = new ArrayList<Document>();
 		Folder parentFolder = (Folder) session.getObjectByPath(path);
-		Iterator<CmisObject> it = parentFolder.getChildren().iterator();
-		logger.info("Documents in "+path+":");
-		while(it.hasNext()) {
-		  CmisObject object = it.next();
-		  if(object.getType().getDisplayName().equals("Document")){
-			  Document doc = (Document) object;
-			  documents.add(doc);
-			  logger.info(doc.getName());
-		  }
+		if (parentFolder!=null){
+			Iterator<CmisObject> it = parentFolder.getChildren().iterator();
+			while(it.hasNext()) {
+			  CmisObject object = it.next();
+			  if(object.getType().getDisplayName().equals("Document")){
+				  Document doc = (Document) object;
+				  documents.add(doc);
+				  logger.info("Document " + doc.getName() + " found in " + path);
+			  }
+			}
+		} else {
+			logger.error("Path not valid!");
+			return null;
 		}
 		return documents;
 	}
@@ -280,7 +278,7 @@ public class CmisClient {
 				}
 			}
 		} catch (CmisObjectNotFoundException e){
-			logger.error("Object not found: " + path);
+			logger.error("Folder not found: " + path);
 		}
 	}
 	
