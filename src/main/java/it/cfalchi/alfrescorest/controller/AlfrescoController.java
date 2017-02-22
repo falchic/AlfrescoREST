@@ -254,7 +254,7 @@ public class AlfrescoController {
 			String path = (String) request.get(RequestConstants.FOLDER_PATH);
 		    boolean removed = cmisClient.removeFolder(path);
 		    if(removed){
-		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    	response = new ResponseEntity<String>(HttpStatus.OK);
 		    } else {
 		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
 		    }
@@ -290,7 +290,7 @@ public class AlfrescoController {
 			List<String> uuidList = (List<String>) request.get(RequestConstants.UUID_LIST);
 		    boolean removed = cmisClient.removeDocuments(uuidList);
 		    if(removed){
-		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    	response = new ResponseEntity<String>(HttpStatus.OK);
 		    } else {
 		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
 		    }
