@@ -16,4 +16,6 @@ public class RequestConstants {
 	
 	public static final String GET_CONTENT = "get_content";
 	
+	public static final String UUID_LIST = "uuid_list";
+	
 }

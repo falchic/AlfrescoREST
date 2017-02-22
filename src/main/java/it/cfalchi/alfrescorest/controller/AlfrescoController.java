@@ -8,9 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.chemistry.opencmis.client.api.Document;
-import org.apache.chemistry.opencmis.client.api.Folder;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
-import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,6 +229,77 @@ public class AlfrescoController {
 		String[] parts = id.split("/"); 
 		String uuid = parts[3];
 		return uuid;
+	}
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
+	 *			"destination":""
+	 *		}
+	 *	}
+	 */
+	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_REMOVE_FOLDER, method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<String> removeFolderService (@RequestBody RequestMessage message){
+		logger.info("Start removeFolderService");
+		
+		ResponseEntity<String> response = null;
+		
+		boolean isValid = message.isValid(false);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+			String path = (String) request.get(RequestConstants.FOLDER_PATH);
+		    boolean removed = cmisClient.removeFolder(path);
+		    if(removed){
+		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    } else {
+		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		    }
+		} else {
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+			logger.error("Request not valid!");
+		}
+		logger.info("Stop removeFolderService");
+		return response;
+	}
+	
+	/**
+	 *  Messaggio di richiesta:
+	 * {
+	 *		"user":"admin",
+	 *		"password":"alfresco",
+	 *		"request":{
+	 *			"uuid_list":""
+	 *		}
+	 *	}
+	 */
+	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_REMOVE_DOCS, method = RequestMethod.POST)
+	public @ResponseBody ResponseEntity<String> removeDocumentsService (@RequestBody RequestMessage message){
+		logger.info("Start removeDocumentsService");
+		
+		ResponseEntity<String> response = null;
+		
+		boolean isValid = message.isValid(false);
+		if(isValid){
+			CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+			Map<String,Object> request = message.getRequest();
+			@SuppressWarnings("unchecked")
+			List<String> uuidList = (List<String>) request.get(RequestConstants.UUID_LIST);
+		    boolean removed = cmisClient.removeDocuments(uuidList);
+		    if(removed){
+		    	response = new ResponseEntity<String>(HttpStatus.CREATED);
+		    } else {
+		    	response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		    }
+		} else {
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+			logger.error("Request not valid!");
+		}
+		logger.info("Stop removeDocumentsService");
+		return response;
 	}
 	
 }

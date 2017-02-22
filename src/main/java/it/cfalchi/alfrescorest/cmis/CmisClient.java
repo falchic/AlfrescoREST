@@ -223,6 +223,12 @@ public class CmisClient {
 		return (Document)object;
 	}
 	
+	/**
+	 * Restituisce la lista di documenti presenti in una data cartella.
+	 * 
+	 * @param path
+	 * @return documents
+	 */
 	public List<Document> getDocumentsByFolder(String path){
 		List<Document> documents = new ArrayList<Document>();
 		Folder parentFolder = (Folder) session.getObjectByPath(path);
@@ -243,31 +249,45 @@ public class CmisClient {
 		return documents;
 	}
 	
-	public void removeDocument(List<String> uuidList){
+	/**
+	 * Data una lista di uuid, elimina i documenti relativi.
+	 * 
+	 * @param uuidList
+	 */
+	public boolean removeDocuments(List<String> uuidList){
 		for(String uuid : uuidList){
-			Document doc = getDocumentByUUIDPath(uuid, "");
-			String path = doc.getPaths().get(0);
-			//controllo permessi
-			if (doc.getAllowableActions().getAllowableActions().
-					contains(Action.CAN_DELETE_OBJECT) == false) {
-					throw new CmisUnauthorizedException(user + " does not have permission to delete document " +
-					doc.getName()+" with Object ID "+doc.getId());
-					}
-			boolean deleteAllVersions = true;
-			doc.delete(deleteAllVersions);
-			logger.info("Deleted document in "+ path);
+			try{
+				Document doc = getDocumentByUUIDPath(uuid, "");
+				String path = doc.getPaths().get(0);
+				//controllo permessi
+				if (doc.getAllowableActions().getAllowableActions().
+						contains(Action.CAN_DELETE_OBJECT) == false) {
+						logger.error(user + " does not have permission to delete document " + doc.getName());
+						}
+				boolean deleteAllVersions = true;
+				doc.delete(deleteAllVersions);
+				logger.info("Deleted document in "+ path);
+			} catch(CmisObjectNotFoundException e){
+				logger.error("Document not found! [id: " + uuid + "]");
+				return false;
+			}
 		}
+		return true;
 	}
 	
-	public void removeFolder(String path){
+	/**
+	 * Elimina la cartella definita dal path.
+	 * 
+	 * @param path
+	 */
+	public boolean removeFolder(String path){
 		try{
 			Folder folder = (Folder) session.getObjectByPath(path);
 			//controllo permessi
-			if (folder.getAllowableActions().getAllowableActions().
-					contains(Action.CAN_DELETE_TREE) == false) {
-					throw new CmisUnauthorizedException(user + " does" +
-					" not have permission to delete folder tree" + folder.getPath());
-					}
+			if (folder.getAllowableActions().getAllowableActions().contains(Action.CAN_DELETE_TREE) == false) {
+				logger.error(user + " does not have permission to delete folder tree" + folder.getPath());
+				return false;
+			}
 			boolean deleteAllVersions = true;
 			boolean continueOnFailure = true;
 			List<String> failedObjectIds =folder.deleteTree(deleteAllVersions, UnfileObject.DELETE, continueOnFailure);
@@ -277,8 +297,10 @@ public class CmisClient {
 					logger.info("Could not delete Alfresco node with id: " + failedObjectId);
 				}
 			}
+			return true;
 		} catch (CmisObjectNotFoundException e){
 			logger.error("Folder not found: " + path);
+			return false;
 		}
 	}
 	
