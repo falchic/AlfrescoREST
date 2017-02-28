@@ -1,15 +1,8 @@
 package it.cfalchi.alfrescorest.model;
 
-import java.io.Serializable;
-import java.util.Date;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.DateSerializer;
-
-public class RequestMessage implements Serializable{
-
-	private static final long serialVersionUID = -7788619177798333712L;
+public class RequestMessage {
 	
 	private String user;
 	private String password;

@@ -26,7 +26,7 @@
 	            <li class="dropdown">
 	              <a href="" class="dropdown-toggle" data-toggle="dropdown">Services<b class="caret"></b></a>
 	              <ul class="dropdown-menu">
-	                <c:url value="/createDoc" var="createDocUrl"/>
+	              	<c:url value="/createDoc" var="createDocUrl"/>
 	                <li><a href="${createDocUrl}">Create document</a></li>
 	                <li><a href="#">Create folder</a></li>
 	                <li><a href="#">Get document by ID or path</a></li>
@@ -46,39 +46,43 @@
 	
 	    <div class="container">
 	    	<div class="row text-center">
-	    		<h4>Select a service to start</h4>
-	    		<div id="content" class="jumbotron">
-			      	<div class="row text-center">
-				    	<div class="col-md-2">
-				    		<a href="createDoc" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-new"></i></a>
-				        </div>
-						<div class="col-md-2">
-							<a href="" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-folder"></i></a>
-				        </div>
-			            <div class="col-md-2">
-			            	<a href="" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-document"></i></a>
-				        </div>
-				        <div class="col-md-2">
-				        	<a href="" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-list-bulleted"></i></a>
-				        </div>
-				        <div class="col-md-2">
-				        	<a href="" class="btn btn-danger btn-circle btn-xl" role="button"><i class="fui-cross"></i></a>
-				        </div>
-				        <div class="col-md-2">
-				        	<a href="" class="btn btn-danger btn-circle btn-xl" role="button"><i class="fui-trash"></i></a>
-				        </div>
-			        </div>
-			        <div class="row text-center">
-						<div class="col-md-2 label-service">Create document</div>
-						<div class="col-md-2 label-service">Create folder</div>
-						<div class="col-md-2 label-service">Get document by ID or path</div>
-						<div class="col-md-2 label-service">Get documents in a folder</div>
-						<div class="col-md-2 label-service">Remove documents in a folder</div>
-						<div class="col-md-2 label-service">Remove folder</div>
-					</div>
-		      	</div>
+	    		<h4>Create a new document</h4>
+	    		<div id="content" class="col-md-8 col-md-offset-2">
+	    			<c:url value="/request/createDoc" var="createDocUrl"/>
+	    			<form class="form-horizontal" method="POST" action="${createDocUrl}" enctype="multipart/form-data">
+	    				<div class="form-group">
+			              <label for="inputPath" class="col-lg-2 control-label">Destination</label>
+			              <div class="col-lg-8">
+			                	<input type="text" name="destination" class="form-control" id="inputPath" placeholder="Enter a path">
+			              </div>
+			            </div>
+			            <div class="form-group">
+			              <label for="inputTitle" class="col-lg-2 control-label">Title</label>
+			              <div class="col-lg-8">
+			                	<input type="text" name= "title" class="form-control" id="inputTitle" placeholder="Enter a title">
+			              </div>
+			            </div>
+			            <div class="form-group">
+			              <label for="inputDescription" class="col-lg-2 control-label">Description</label>
+			              <div class="col-lg-8">
+			                	<input type="text" name="description" class="form-control" id="inputDescription" placeholder="Enter a description">
+			              </div>
+			            </div>
+			            <div class="form-group">
+			            	<label for="inputFile" class="col-lg-2 control-label">File</label>
+			            	<div class="col-lg-8">
+				            	<input type="file" name="file" id="inputFile">
+				            </div>
+			            </div>
+			            <div class="form-group">
+			              <div class="col-lg-8 col-md-offset-2">
+			                <button type="submit" class="btn btn-primary">Submit</button>
+			              </div>
+			            </div>
+	    			</form>
+	    		</div>
 	    	</div>
-	
-	    </div> <!-- /container -->
-    </body>
+	    </div>
+
+</body>
 </html>
