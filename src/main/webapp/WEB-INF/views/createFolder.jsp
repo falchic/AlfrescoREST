@@ -48,9 +48,9 @@
 	
 	    <div class="container">
 	    	<div class="row text-center">
-	    		<h4>Create a new document</h4>
+	    		<h4>Create a new folder</h4>
 	    		<div id="content" class="col-md-8 col-md-offset-2">
-	    			<form class="form-horizontal" name="form" id="doc-form" method="POST" enctype="multipart/form-data">
+	    			<form class="form-horizontal" name="form" id="folder-form">
 	    				<div class="form-group">
 			              <label for="destination" class="col-lg-2 control-label">Destination</label>
 			              <div class="col-lg-8">
@@ -58,22 +58,10 @@
 			              </div>
 			            </div>
 			            <div class="form-group">
-			              <label for="title" class="col-lg-2 control-label">Title</label>
+			              <label for="name" class="col-lg-2 control-label">Name</label>
 			              <div class="col-lg-8">
-			                	<input type="text" class="form-control" id="title" placeholder="Enter a title">
+			                	<input type="text" class="form-control" id="name" placeholder="Enter a name">
 			              </div>
-			            </div>
-			            <div class="form-group">
-			              <label for="description" class="col-lg-2 control-label">Description</label>
-			              <div class="col-lg-8">
-			                	<input type="text" class="form-control" id="description" placeholder="Enter a description">
-			              </div>
-			            </div>
-			            <div class="form-group">
-			            	<label for="inputFile" class="col-lg-2 control-label">File</label>
-			            	<div class="col-lg-8">
-				            	<input type="file" name="file" id="inputFile">
-				            </div>
 			            </div>
 			            <div class="form-group">
 			              <div class="col-lg-8 col-md-offset-2">

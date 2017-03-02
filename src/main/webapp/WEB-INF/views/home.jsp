@@ -9,6 +9,7 @@
         <link type="text/css" href="<c:url value='/resources/css/custom.css' />" rel="stylesheet" />
         <script src="<c:url value="/resources/js/jquery.min.js" />"></script>
     	<script src="<c:url value="/resources/js/flat-ui.min.js" />"></script>
+    	<script src="<c:url value="/resources/js/alfresco.js" />"></script>
     </head>
     <body>
     	<!-- Static navbar -->
@@ -28,7 +29,8 @@
 	              <ul class="dropdown-menu">
 	                <c:url value="/createDoc" var="createDocUrl"/>
 	                <li><a href="${createDocUrl}">Create document</a></li>
-	                <li><a href="#">Create folder</a></li>
+	                <c:url value="/createFolder" var="createFolderUrl"/>
+	                <li><a href="${createFolderUrl}">Create folder</a></li>
 	                <li><a href="#">Get document by ID or path</a></li>
 	                <li><a href="#">Get documents in a folder</a></li>
 	                <li><a href="#">Remove documents in a folder</a></li>
@@ -53,7 +55,7 @@
 				    		<a href="createDoc" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-new"></i></a>
 				        </div>
 						<div class="col-md-2">
-							<a href="" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-folder"></i></a>
+							<a href="createFolder" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-folder"></i></a>
 				        </div>
 			            <div class="col-md-2">
 			            	<a href="" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-document"></i></a>

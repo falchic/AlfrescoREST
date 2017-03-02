@@ -2,11 +2,18 @@ package it.cfalchi.alfrescorest.model;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true) 
 public class RequestMessage {
 	
 	private String user;
 	private String password;
 	private Map<String, Object> request;
+	
+	public RequestMessage(){
+		
+	}
 	
 	public String getUser() {
 		return user;

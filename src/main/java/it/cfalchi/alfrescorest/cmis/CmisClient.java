@@ -60,6 +60,7 @@ public class CmisClient {
 	 * @return session
 	 */
 	public Session createSession(String user, String password) {
+		logger.info("Trying to connect with user: " + user + " and password: " + password);
 		SessionFactory sessionFactory = SessionFactoryImpl.newInstance();
 		Map<String, String> parameters = new HashMap<String, String>();
 		parameters.put(SessionParameter.USER, user);
@@ -125,6 +126,7 @@ public class CmisClient {
 						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument = parentFolder.createDocument(props, contentStream, VersioningState.MAJOR);
 				logger.info("Document '" + name + "' created in " + (String) request.get(RequestConstants.DOC_PATH));
+				response.setMessage("Document created!");
 			} else {
 				//se file esiste viene eseguito l'update del contenuto
 				logger.info("Document already exists, updating content stream...");
@@ -135,18 +137,20 @@ public class CmisClient {
 						.createContentStream(name, (long) request.get("length"), mimeType, input);
 				newDocument.setContentStream(contentStream, true);
 				logger.info("Document "+newDocument.getPaths().get(0)+" updated");
+				response.setMessage("Document updated!");
 			}
-			response = new ResponseMessage();
+		    //TODO versioning
+		    //nel messaggio di risposta è presente l'uuid e la versione del documento appena creato
 			String[] uuidVersion = getUuidVersion(newDocument.getId());
-			response.setAttribute("uuid", uuidVersion[0]);
-			response.setAttribute("version", uuidVersion[1]);
+			response.setAttribute("docUuid", uuidVersion[0]);
+			response.setAttribute("docVersion", uuidVersion[1]);
 		} catch (CmisObjectNotFoundException | IllegalArgumentException e){
 			response.setCode("400");
 	    	response.setMessage("Bad request, path not valid");
 			logger.error("Path not valid!");
+			return response;
 		}
 		response.setCode("200");
-    	response.setMessage("Document created!");
 		return response;
 	}
 	
@@ -208,18 +212,21 @@ public class CmisClient {
 				folderProps.put(PropertyIds.OBJECT_TYPE_ID, "cmis:folder");
 				newFolder = parentFolder.createFolder(folderProps);
 				logger.info("Folder '"+folderName+"' created in " + path);
+				//nel messagggio di risposta è presente il nome e il path della cartella appena creata
 				response.setCode("200");
 		    	response.setMessage("Folder created!");
+		    	response.setAttribute("folderName", folderName);
+		    	response.setAttribute("folderPath", path);
 			} else {
 				logger.info("Folder "+newFolder.getPath()+" already exists!");
 				response.setCode("200");
 		    	response.setMessage("Folder already exist!");
 			}
-			
 		} catch (CmisObjectNotFoundException | IllegalArgumentException e){
 			response.setCode("400");
 	    	response.setMessage("Bad request, path not valid");
 			logger.error("Path not valid!");
+			return response;
 		}
 		return response;
 	}
@@ -244,7 +251,7 @@ public class CmisClient {
 			if (object == null) return null;
 			if(!object.getType().getDisplayName().equals("Document")) return null;
 			logger.info("Document retrived [id: " + uuid + "]");
-		} catch (CmisObjectNotFoundException e){
+		} catch (CmisObjectNotFoundException | IllegalArgumentException e){
 			logger.error("Document not found!");
 		}
 		return (Document)object;
@@ -306,7 +313,10 @@ public class CmisClient {
 	 * 
 	 * @param uuidList
 	 */
-	public boolean removeDocuments(List<String> uuidList){
+	public ResponseMessage removeDocuments(List<String> uuidList){
+		ResponseMessage response = new ResponseMessage();
+		Map<String,String> notDeleted = new HashMap<>();
+		
 		for(String uuid : uuidList){
 			try{
 				Document doc = getDocumentByUUIDPath(uuid, "");
@@ -315,16 +325,25 @@ public class CmisClient {
 				if (doc.getAllowableActions().getAllowableActions().
 						contains(Action.CAN_DELETE_OBJECT) == false) {
 						logger.error(user + " does not have permission to delete document " + doc.getName());
+						notDeleted.put(uuid,"User does not have permission");
 						}
 				boolean deleteAllVersions = true;
 				doc.delete(deleteAllVersions);
 				logger.info("Deleted document in "+ path);
 			} catch(CmisObjectNotFoundException e){
 				logger.error("Document not found! [id: " + uuid + "]");
-				return false;
+				notDeleted.put(uuid,"Document not found");
 			}
 		}
-		return true;
+		if(notDeleted.isEmpty()){
+			response.setCode("200");
+	    	response.setMessage("Documents deleted!");
+		} else {
+			response.setCode("400");
+			response.setMessage("Not all documents have been deleted");
+			response.setAttribute("errors", notDeleted);
+		}
+		return response;
 	}
 	
 	/**
@@ -332,13 +351,18 @@ public class CmisClient {
 	 * 
 	 * @param path
 	 */
-	public boolean removeFolder(String path){
+	public ResponseMessage removeFolder(String path){
+		ResponseMessage response = new ResponseMessage();
+		Map<String,String> notDeleted = new HashMap<>();
+		
 		try{
 			Folder folder = (Folder) session.getObjectByPath(path);
 			//controllo permessi
 			if (folder.getAllowableActions().getAllowableActions().contains(Action.CAN_DELETE_TREE) == false) {
 				logger.error(user + " does not have permission to delete folder tree" + folder.getPath());
-				return false;
+				response.setCode("403");
+		    	response.setMessage("User does not have permission to to delete folder tree" + folder.getPath());
+				return response;
 			}
 			boolean deleteAllVersions = true;
 			boolean continueOnFailure = true;
@@ -347,13 +371,24 @@ public class CmisClient {
 			if (failedObjectIds != null && failedObjectIds.size() > 1) {
 				for (String failedObjectId : failedObjectIds) {
 					logger.info("Could not delete Alfresco node with id: " + failedObjectId);
+					notDeleted.put(failedObjectId,"Could not delete node");
 				}
 			}
-			return true;
-		} catch (CmisObjectNotFoundException e){
+		} catch (CmisObjectNotFoundException | IllegalArgumentException e){
 			logger.error("Folder not found: " + path);
-			return false;
+			response.setCode("400");
+	    	response.setMessage("Bad request, path not valid");
+	    	return response;
 		}
+		if(notDeleted.isEmpty()){
+			response.setCode("200");
+	    	response.setMessage("Folder tree deleted!");
+		} else {
+			response.setCode("400");
+			response.setMessage("Some errors occurred");
+			response.setAttribute("errors", notDeleted);
+		}
+		return response;
 	}
 	
 	//TODO versioning!!

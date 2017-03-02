@@ -24,4 +24,11 @@ public class PagesController {
 		model.setViewName("createDoc");
 		return model;
     }
+	
+	@RequestMapping("/createFolder")
+    public ModelAndView createFolderPage() {
+		ModelAndView model = new ModelAndView();
+		model.setViewName("createFolder");
+		return model;
+    }
 }
