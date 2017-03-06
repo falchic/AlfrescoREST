@@ -33,7 +33,7 @@ import it.cfalchi.alfrescorest.utils.RequestConstants;
 
 
 @Controller
-public class AlfrescoControllerImpl {
+public class AlfrescoControllerImpl implements AlfrescoController{
 	
 	private static final Logger logger = LoggerFactory.getLogger(AlfrescoControllerImpl.class);
 	
@@ -52,8 +52,10 @@ public class AlfrescoControllerImpl {
 	 * @throws JsonMappingException 
 	 * @throws JsonParseException 
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_CREATE_DOC, method = RequestMethod.POST, consumes = {"multipart/form-data"})
-	public @ResponseBody ResponseMessage createDocumentService (@RequestPart("message") RequestMessage message, @RequestPart("file") MultipartFile file) throws IOException{
+	@ResponseBody
+	public ResponseMessage createDocumentService (@RequestPart("message") RequestMessage message, @RequestPart("file") MultipartFile file) throws IOException{
 		logger.info("Start createDocumentService");
 		
 		ResponseMessage response = new ResponseMessage();
@@ -88,8 +90,10 @@ public class AlfrescoControllerImpl {
 	 *		}
 	 *	}
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_CREATE_FOLDER, method = RequestMethod.POST)
-	public @ResponseBody ResponseMessage createFolderService (@RequestBody RequestMessage message){
+	@ResponseBody
+	public ResponseMessage createFolderService (@RequestBody RequestMessage message){
 		logger.info("Start createFolderService");
 		
 		ResponseMessage response = new ResponseMessage();
@@ -119,8 +123,10 @@ public class AlfrescoControllerImpl {
 	 *		}
 	 *	}
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_GET_DOC, method = RequestMethod.POST)
-	public @ResponseBody ResponseEntity<InputStreamResource> getDocumentService (@RequestBody RequestMessage message) throws IOException {
+	@ResponseBody
+	public ResponseEntity<InputStreamResource> getDocumentService (@RequestBody RequestMessage message) throws IOException{
 		logger.info("Start getDocumentService");
 		
 		Document doc = null;
@@ -163,8 +169,10 @@ public class AlfrescoControllerImpl {
 	 *		}
 	 *	}
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_GET_DOCS, method = RequestMethod.POST)
-	public @ResponseBody ResponseMessage getDocumentsFolderService (@RequestBody RequestMessage message){
+	@ResponseBody
+	public ResponseMessage getDocumentsFolderService (@RequestBody RequestMessage message){
 		logger.info("Start getDocumentsFolderService");
 
 		ResponseMessage response = new ResponseMessage();
@@ -195,8 +203,10 @@ public class AlfrescoControllerImpl {
 	 *		}
 	 *	}
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_REMOVE_FOLDER, method = RequestMethod.POST)
-	public @ResponseBody ResponseMessage removeFolderService (@RequestBody RequestMessage message){
+	@ResponseBody
+	public ResponseMessage removeFolderService (@RequestBody RequestMessage message){
 		logger.info("Start removeFolderService");
 		
 		ResponseMessage response = new ResponseMessage();
@@ -226,8 +236,10 @@ public class AlfrescoControllerImpl {
 	 *		}
 	 *	}
 	 */
+	@Override
 	@RequestMapping(value = AlfrescoRestURIConstants.REQUEST_REMOVE_DOCS, method = RequestMethod.POST)
-	public @ResponseBody ResponseMessage removeDocumentsService (@RequestBody RequestMessage message){
+	@ResponseBody
+	public ResponseMessage removeDocumentsService (@RequestBody RequestMessage message){
 		logger.info("Start removeDocumentsService");
 		
 		ResponseMessage response = new ResponseMessage();

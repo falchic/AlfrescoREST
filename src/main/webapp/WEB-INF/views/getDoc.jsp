@@ -35,7 +35,8 @@
 	                <li><a href="${getDocUrl}">Get document by ID or path</a></li>
 	                <li><a href="#">Get documents in a folder</a></li>
 	                <li><a href="#">Remove documents in a folder</a></li>
-	                <li><a href="#">Remove folder</a></li>
+	                <c:url value="/removeFolder" var="removeFolderUrl"/>
+	                <li><a href="${removeFolderUrl}">Remove folder</a></li>
 	              </ul>
 	            </li>
 	          </ul>
@@ -49,9 +50,9 @@
 	
 	    <div class="container">
 	    	<div class="row text-center">
-	    		<h4>Create a new folder</h4>
+	    		<h4>Get a document</h4>
 	    		<div id="content" class="col-md-8 col-md-offset-2">
-	    			<form class="form-horizontal" name="form" id="folder-form">
+	    			<form class="form-horizontal" name="form" id="getdoc-form">
 	    				<div class="form-group">
 			              <label for="destination" class="col-lg-2 control-label">Destination</label>
 			              <div class="col-lg-8">
@@ -59,9 +60,9 @@
 			              </div>
 			            </div>
 			            <div class="form-group">
-			              <label for="name" class="col-lg-2 control-label">Name</label>
+			              <label for="name" class="col-lg-2 control-label">ID</label>
 			              <div class="col-lg-8">
-			                	<input type="text" class="form-control" id="name" placeholder="Enter a name">
+			                	<input type="text" class="form-control" id="uuid" placeholder="Enter ID">
 			              </div>
 			            </div>
 			            <div class="form-group">

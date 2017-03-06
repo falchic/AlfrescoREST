@@ -109,6 +109,7 @@ public class CmisClient {
 		    	return response;
 			}
 			
+			//TODO versioning!!
 			//controllo se esiste già un file con lo stesso nome
 			newDocument = (Document) getObject(parentFolder, (String) request.get(RequestConstants.DOC_NAME));
 			if (newDocument == null){
@@ -139,7 +140,7 @@ public class CmisClient {
 				logger.info("Document "+newDocument.getPaths().get(0)+" updated");
 				response.setMessage("Document updated!");
 			}
-		    //TODO versioning
+		    
 		    //nel messaggio di risposta è presente l'uuid e la versione del documento appena creato
 			String[] uuidVersion = getUuidVersion(newDocument.getId());
 			response.setAttribute("docUuid", uuidVersion[0]);
@@ -241,7 +242,7 @@ public class CmisClient {
 	public Document getDocumentByUUIDPath(String uuid, String path){
 		CmisObject object = null;
 		try {
-			if(path!=null){
+			if(path!=null && !path.equals("")){
 				object = session.getObjectByPath(path);
 				logger.info("Document retrived [path: " + path + "]");
 				return (Document)object;
@@ -252,7 +253,7 @@ public class CmisClient {
 			if(!object.getType().getDisplayName().equals("Document")) return null;
 			logger.info("Document retrived [id: " + uuid + "]");
 		} catch (CmisObjectNotFoundException | IllegalArgumentException e){
-			logger.error("Document not found!");
+			logger.error("Document not found! [id: " + uuid + "]" );
 		}
 		return (Document)object;
 	}
@@ -359,9 +360,9 @@ public class CmisClient {
 			Folder folder = (Folder) session.getObjectByPath(path);
 			//controllo permessi
 			if (folder.getAllowableActions().getAllowableActions().contains(Action.CAN_DELETE_TREE) == false) {
-				logger.error(user + " does not have permission to delete folder tree" + folder.getPath());
+				logger.error(user + " does not have permission to delete folder tree " + folder.getPath());
 				response.setCode("403");
-		    	response.setMessage("User does not have permission to to delete folder tree" + folder.getPath());
+		    	response.setMessage("User does not have permission to to delete folder tree " + folder.getPath());
 				return response;
 			}
 			boolean deleteAllVersions = true;
@@ -370,7 +371,7 @@ public class CmisClient {
 			logger.info("Deleted folder and all its content: " + folder.getName());
 			if (failedObjectIds != null && failedObjectIds.size() > 1) {
 				for (String failedObjectId : failedObjectIds) {
-					logger.info("Could not delete Alfresco node with id: " + failedObjectId);
+					logger.info("Could not delete Alfresco node with id " + failedObjectId);
 					notDeleted.put(failedObjectId,"Could not delete node");
 				}
 			}
@@ -390,7 +391,5 @@ public class CmisClient {
 		}
 		return response;
 	}
-	
-	//TODO versioning!!
 	
 }

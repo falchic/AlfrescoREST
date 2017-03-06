@@ -31,10 +31,12 @@
 	                <li><a href="${createDocUrl}">Create document</a></li>
 	                <c:url value="/createFolder" var="createFolderUrl"/>
 	                <li><a href="${createFolderUrl}">Create folder</a></li>
-	                <li><a href="#">Get document by ID or path</a></li>
+	                <c:url value="/getDoc" var="getDocUrl"/>
+	                <li><a href="${getDocUrl}">Get document by ID or path</a></li>
 	                <li><a href="#">Get documents in a folder</a></li>
 	                <li><a href="#">Remove documents in a folder</a></li>
-	                <li><a href="#">Remove folder</a></li>
+	                <c:url value="/removeFolder" var="removeFolderUrl"/>
+	                <li><a href="${removeFolderUrl}">Remove folder</a></li>
 	              </ul>
 	            </li>
 	          </ul>
@@ -58,7 +60,7 @@
 							<a href="createFolder" class="btn btn-success btn-circle btn-xl" role="button"><i class="fui-folder"></i></a>
 				        </div>
 			            <div class="col-md-2">
-			            	<a href="" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-document"></i></a>
+			            	<a href="getDoc" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-document"></i></a>
 				        </div>
 				        <div class="col-md-2">
 				        	<a href="" class="btn btn-info btn-circle btn-xl" role="button"><i class="fui-list-bulleted"></i></a>
@@ -67,7 +69,7 @@
 				        	<a href="" class="btn btn-danger btn-circle btn-xl" role="button"><i class="fui-cross"></i></a>
 				        </div>
 				        <div class="col-md-2">
-				        	<a href="" class="btn btn-danger btn-circle btn-xl" role="button"><i class="fui-trash"></i></a>
+				        	<a href="removeFolder" class="btn btn-danger btn-circle btn-xl" role="button"><i class="fui-trash"></i></a>
 				        </div>
 			        </div>
 			        <div class="row text-center">

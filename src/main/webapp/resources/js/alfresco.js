@@ -7,10 +7,17 @@ jQuery(document).ready(function($) {
 		event.preventDefault();
 		postCreateFolder();
 	});
+	$("#getdoc-form").submit(function(event) {
+		event.preventDefault();
+		postGetDoc();
+	});
+	$("#removefold-form").submit(function(event) {
+		event.preventDefault();
+		postRemoveFolder();
+	});
 });
 
 function postCreateDoc() {
-	var ciaone;
 	var message = {}
 	message["user"] = "admin";
 	message["password"] = "alfresco";
@@ -34,6 +41,34 @@ function postCreateDoc() {
 		data : formData,
 		success : function(data) {
 			console.log("SUCCESS: ", data);
+			display(data);
+		},
+		error : function(e) {
+			console.log("ERROR: ", e);
+			display(e);
+		},
+		done : function(e) {
+			console.log("DONE");
+		}
+	});
+}
+
+function postGetDoc() {
+	var message = {}
+	message["user"] = "admin";
+	message["password"] = "alfresco";
+	var request = {}
+	request["destination"] = $("#destination").val();
+	request["uuid"] = $("#uuid").val();
+	message["request"] = request;
+	
+	$.ajax({
+		type : "POST",
+		url : "request/getDoc",
+		contentType : "application/json",
+		data : JSON.stringify(message),
+		success : function(data) {
+			console.log("SUCCESS");
 			display(data);
 		},
 		error : function(e) {
@@ -78,4 +113,31 @@ function display(data) {
 	var json = "<h4>Response</h4><pre>"
 			+ JSON.stringify(data, null, 4) + "</pre>";
 	$('#feedback').html(json);
+}
+
+function postRemoveFolder() {
+	var message = {}
+	message["user"] = "admin";
+	message["password"] = "alfresco";
+	var request = {}
+	request["destination"] = $("#destination").val();
+	message["request"] = request;
+	
+	$.ajax({
+		type : "POST",
+		url : "request/removeFolder",
+		contentType : "application/json",
+		data : JSON.stringify(message),
+		success : function(data) {
+			console.log("SUCCESS: ", data);
+			display(data);
+		},
+		error : function(e) {
+			console.log("ERROR: ", e);
+			display(e);
+		},
+		done : function(e) {
+			console.log("DONE");
+		}
+	});
 }

@@ -44,7 +44,7 @@ public class RequestMessage {
 			return false;
 		} else {
 			if(isGetDoc){
-				if(!(request.get("destination")==null) || !(request.get("uuid")==null)){
+				if(!(request.get("destination").equals("")) || !(request.get("uuid").equals(""))){
 					return true;
 				} else {
 					return false;

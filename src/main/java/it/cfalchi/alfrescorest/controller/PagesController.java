@@ -31,4 +31,19 @@ public class PagesController {
 		model.setViewName("createFolder");
 		return model;
     }
+	
+	@RequestMapping("/getDoc")
+    public ModelAndView getDocPage() {
+		ModelAndView model = new ModelAndView();
+		model.setViewName("getDoc");
+		return model;
+    }
+	
+	@RequestMapping("/removeFolder")
+    public ModelAndView removeFolderPage() {
+		ModelAndView model = new ModelAndView();
+		model.setViewName("removeFolder");
+		return model;
+    }
+	
 }
