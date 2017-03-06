@@ -1,4 +1,4 @@
-package it.cfalchi.alfrescorest.cmis;
+package it.cfalchi.alfrescorest.service;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,80 +12,27 @@ import java.util.Map;
 import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.Folder;
-import org.apache.chemistry.opencmis.client.api.Repository;
 import org.apache.chemistry.opencmis.client.api.Session;
-import org.apache.chemistry.opencmis.client.api.SessionFactory;
-import org.apache.chemistry.opencmis.client.runtime.SessionFactoryImpl;
 import org.apache.chemistry.opencmis.commons.PropertyIds;
-import org.apache.chemistry.opencmis.commons.SessionParameter;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.chemistry.opencmis.commons.enums.Action;
-import org.apache.chemistry.opencmis.commons.enums.BindingType;
 import org.apache.chemistry.opencmis.commons.enums.UnfileObject;
 import org.apache.chemistry.opencmis.commons.enums.VersioningState;
-import org.apache.chemistry.opencmis.commons.exceptions.CmisConnectionException;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import it.cfalchi.alfrescorest.model.DocumentRetrived;
+import it.cfalchi.alfrescorest.model.RequestMessage;
 import it.cfalchi.alfrescorest.model.ResponseMessage;
+import it.cfalchi.alfrescorest.utils.CmisClient;
 import it.cfalchi.alfrescorest.utils.RequestConstants;
 
-public class CmisClient {
+@Service("cmisService")
+public class CmisService implements AlfrescoService{
 	
-	// utente che si connette ad Alfresco
-	private String user;
-	private Session session;
-	
-	private static final String ALFRESCO_ATOMPUB_URL = "http://localhost:8080/alfresco/cmisatom";
-	
-	private static Logger logger = LoggerFactory.getLogger(CmisClient.class);
-	
-	public CmisClient(String user, String password) {
-		this.user = user;
-		this.session = createSession(user, password);
-	}
-	
-	public Session getSession(){
-		return session;
-	}
-	
-	/**
-	 * Crea una sessione per effettuare operazioni sul repository: ottenute le informazioni
-	 * sul repository sono necessari username e password dell'utente che vuole connettersi.
-	 * 
-	 * @param user
-	 * @param password
-	 * @return session
-	 */
-	public Session createSession(String user, String password) {
-		logger.info("Trying to connect with user: " + user + " and password: " + password);
-		SessionFactory sessionFactory = SessionFactoryImpl.newInstance();
-		Map<String, String> parameters = new HashMap<String, String>();
-		parameters.put(SessionParameter.USER, user);
-		parameters.put(SessionParameter.PASSWORD, password);
-		parameters.put(SessionParameter.ATOMPUB_URL, ALFRESCO_ATOMPUB_URL);
-		parameters.put(SessionParameter.BINDING_TYPE,
-				BindingType.ATOMPUB.value());
-		parameters.put(SessionParameter.OBJECT_FACTORY_CLASS, "org.alfresco.cmis.client.impl.AlfrescoObjectFactoryImpl");
-		//parameters.put(SessionParameter.COMPRESSION, "true");  //compressione HTTP response
-		//parameters.put(SessionParameter.CACHE_TTL_OBJECTS, "0");  //cache time-to-live
-
-		List<Repository> repositories = sessionFactory.getRepositories(parameters);
-		Repository alfrescoRepository = null;
-		if(repositories != null && repositories.size()>0){
-			//dovrebbe esserci solo un repository in Alfresco
-			alfrescoRepository = repositories.get(0);
-			logger.info("Found Alfresco repository [id: " + alfrescoRepository.getId() + "]");
-		} else {
-			throw new CmisConnectionException(
-					"Could not connect to the Alfresco Server, no repository found!");
-		}
-		Session session = alfrescoRepository.createSession();
-		logger.info("Connected to Alfresco repository");
-		return session;
-	}
+	private static Logger logger = LoggerFactory.getLogger(CmisService.class);
 	
 	/**
 	 * Crea un nuovo documento in un path specificato. Se esiste già un oggetto nel path
@@ -95,7 +42,13 @@ public class CmisClient {
 	 * 
 	 * @return newDocument
 	 */
-	public ResponseMessage createDocument(Map<String,Object> request) throws FileNotFoundException{
+	@Override
+	public ResponseMessage createDocument(RequestMessage message) throws FileNotFoundException{
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		String user = cmisClient.getUser();
+		Map<String, Object> request = message.getRequest();
+		
 		Folder parentFolder = null;
 		Document newDocument = null;
 		ResponseMessage response = new ResponseMessage();
@@ -111,7 +64,7 @@ public class CmisClient {
 			
 			//TODO versioning!!
 			//controllo se esiste già un file con lo stesso nome
-			newDocument = (Document) getObject(parentFolder, (String) request.get(RequestConstants.DOC_NAME));
+			newDocument = (Document) cmisClient.getObject(parentFolder, (String) request.get(RequestConstants.DOC_NAME));
 			if (newDocument == null){
 				String name = (String) request.get(RequestConstants.DOC_NAME);
 				Map<String, Object> props = new HashMap<String, Object>();
@@ -155,27 +108,6 @@ public class CmisClient {
 		return response;
 	}
 	
-	/**
-	 * Ottiene un oggetto CMIS, dato il nome della risorsa e la cartella in cui si trova:
-	 * se esiste la risorsa, restituisce l'oggetto.
-	 * 
-	 * @param parentFolder
-	 * @param name
-	 * @return object
-	 */
-	private CmisObject getObject(Folder parentFolder, String name){
-		CmisObject object = null;
-		try {
-			String path = parentFolder.getPath();
-			if(!path.endsWith("/")){
-				path += "/";
-			}
-			path += name;
-			object = session.getObjectByPath(path);
-		}catch(CmisObjectNotFoundException e){}
-		return object;
-	}
-	
 	private String[] getUuidVersion(String id){
 		String[] parts = id.split("/"); 
 		String shortId = parts[3];
@@ -188,7 +120,13 @@ public class CmisClient {
 	 */
 	//TODO creazione in profondità
 	//TODO attribuzione permessi
-	public ResponseMessage createFolder(Map<String,Object> request) {
+	@Override
+	public ResponseMessage createFolder(RequestMessage message) {
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		String user = cmisClient.getUser();
+		Map<String, Object> request = message.getRequest();
+		
 		String path = (String) request.get(RequestConstants.FOLDER_PATH);
 		String folderName = (String) request.get(RequestConstants.FOLDER_NAME);
 		Folder parentFolder = null;
@@ -206,7 +144,7 @@ public class CmisClient {
 			}
 			
 			//controlla se esiste già una cartella con lo stesso nome
-			newFolder = (Folder) getObject(parentFolder, folderName);
+			newFolder = (Folder) cmisClient.getObject(parentFolder, folderName);
 			if(newFolder == null){
 				Map<String, Object> folderProps = new HashMap<String, Object>();
 				folderProps.put(PropertyIds.NAME, folderName);
@@ -239,7 +177,14 @@ public class CmisClient {
 	 * @param path
 	 * @return document
 	 */
-	public Document getDocumentByUUIDPath(String uuid, String path){
+	@Override
+	public Document getDocumentByUUIDPath(RequestMessage message){
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		Map<String, Object> request = message.getRequest();
+		String path = (String) request.get(RequestConstants.DOC_PATH);
+		String uuid = (String) request.get(RequestConstants.DOC_UUID);
+		
 		CmisObject object = null;
 		try {
 			if(path!=null && !path.equals("")){
@@ -265,7 +210,14 @@ public class CmisClient {
 	 * @return documents
 	 * @throws IOException 
 	 */
-	public ResponseMessage getDocumentsByFolder(String path, boolean getContent){
+	@Override
+	public ResponseMessage getDocumentsByFolder(RequestMessage message){
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		Map<String, Object> request = message.getRequest();
+		String path = (String) request.get(RequestConstants.FOLDER_PATH);
+		boolean getContent = (boolean) request.get(RequestConstants.GET_CONTENT);
+		
 		List<DocumentRetrived> documents = new ArrayList<DocumentRetrived>();
 		Folder parentFolder = null;
 		ResponseMessage response = new ResponseMessage();
@@ -314,13 +266,21 @@ public class CmisClient {
 	 * 
 	 * @param uuidList
 	 */
-	public ResponseMessage removeDocuments(List<String> uuidList){
+	@SuppressWarnings("unchecked")
+	@Override
+	public ResponseMessage removeDocuments(RequestMessage message){
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		String user = cmisClient.getUser();
+		Map<String, Object> request = message.getRequest();
+		List<String> uuidList = (List<String>) request.get(RequestConstants.UUID_LIST);
+		
 		ResponseMessage response = new ResponseMessage();
 		Map<String,String> notDeleted = new HashMap<>();
 		
 		for(String uuid : uuidList){
 			try{
-				Document doc = getDocumentByUUIDPath(uuid, "");
+				Document doc = (Document) session.getObject(uuid);
 				String path = doc.getPaths().get(0);
 				//controllo permessi
 				if (doc.getAllowableActions().getAllowableActions().
@@ -352,7 +312,14 @@ public class CmisClient {
 	 * 
 	 * @param path
 	 */
-	public ResponseMessage removeFolder(String path){
+	@Override
+	public ResponseMessage removeFolder(RequestMessage message){
+		CmisClient cmisClient = new CmisClient(message.getUser(), message.getPassword());
+		Session session = cmisClient.getSession();
+		String user = cmisClient.getUser();
+		Map<String, Object> request = message.getRequest();
+		String path = (String) request.get(RequestConstants.FOLDER_PATH);
+		
 		ResponseMessage response = new ResponseMessage();
 		Map<String,String> notDeleted = new HashMap<>();
 		
