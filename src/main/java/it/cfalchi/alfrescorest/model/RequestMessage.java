@@ -40,7 +40,7 @@ public class RequestMessage {
 	}
 	
 	public boolean isValid(boolean isGetDoc){
-		if(user==null && password==null){
+		if(user.equals("") && password.equals("")){
 			return false;
 		} else {
 			if(isGetDoc){
@@ -51,7 +51,7 @@ public class RequestMessage {
 				}
 			} else {
 				for (Map.Entry<String, Object> entry : request.entrySet()){
-				    if(entry.getValue()==null)
+				    if(!entry.getValue().equals(""))
 				    	return false;
 				}
 			}

@@ -9,7 +9,7 @@ public class ResponseMessage {
 	private String message;
 	private Map<String,Object> attributes;
 	
-	public ResponseMessage (){
+	public ResponseMessage(){
 		this.attributes = new HashMap<>();
 		this.code = "000";
 		this.message = "";
